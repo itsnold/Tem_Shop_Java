@@ -38,12 +38,16 @@ The player starts with **145G** and **4/8** inventory slots filled.
 
 ## Store behavior (same page, no checkout)
 
-- **Buy**: `tem flake` 3G, `tem flake (SALE)` 1G, `tem flake (EXP)` 20G,
+- **Buy**: 10 wares — `tem flake` 3G, `tem flake (SALE)` 1G,
+  `tem cupcake` 8G, `tem juice` 12G, `tem flake (EXP)` 20G,
+  `tem donut` 30G, `tem egg` 50G, `tem scarf` 150G, `tem hat` 300G,
   `tem pay 4 colleg` 1000G. Success checks funds and space, deducts gold,
   adds the item, shows `thanks PURCHASE!` with Temmie's joy face, and updates
   `G` and `n/8` on the same screen. Consumables are repeatable.
+  The list scrolls (4 visible rows + `Exit`, arrow markers, Up/Down wraps)
+  so all 10 fit the single page without overlapping the G / n/8 status.
 - **College (one-time)**: buying `tem pay 4 colleg` with 1000G graduates
-  Temmie — black cap appears, the fourth ware becomes `temy ARMOR`, and the
+  Temmie — black cap appears, the tenth ware becomes `temy ARMOR`, and the
   college entry cannot be bought again.
 - **Failed purchase**: without enough gold, the sale is blocked, nothing is
   deducted, and Temmie shows her nervous sweat face with
@@ -86,12 +90,13 @@ mirroring `obj_shop5_body`:
 - **C. Same-page purchase**: `buy()` (`TemShopPanel.java:327`) checks funds
   and 8-slot space, deducts gold, adds the item, updates `G` and `n/8`, and
   shows `thanks PURCHASE!` on the same screen. Consumables are repeatable.
+  All 10 wares share one scrollable Buy list (4 visible rows + `Exit`).
 - **D. Failed purchase**: broke shows `you don hav da muns,` + nervous face,
   full bag shows `WAO!! bag FULLS!`; nothing is deducted or granted and the
   shop stays usable.
 - **E. One-time behavior**: `tem pay 4 colleg` graduates Temmie (cap appears,
-  ware becomes `temy ARMOR`, `TemShopPanel.java:351`) and cannot be bought
-  again; every visible control (Buy/Sell/Talk/Exit) responds.
+  tenth ware becomes `temy ARMOR`, found by name so it survives the 10-item
+  list) and cannot be bought again; every visible control (Buy/Sell/Talk/Exit) responds.
 - **Hand-coded Swing**: no GUI builders; `JFrame` + hand-painted `JPanel`
   with `KeyStroke` bindings, `MouseAdapter`, and `Timer`s. No JavaFX/web.
 - **Self-contained**: relative `assets/` + `lib/` paths only (verified: no

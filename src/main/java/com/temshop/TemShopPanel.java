@@ -34,10 +34,20 @@ final class TemShopPanel extends JPanel {
     private static final Font STATUS_FONT = loadGameFont("assets/fonts/8bitoperator_jvec.ttf", 26f);
     private static final Font SIGN_FONT = loadGameFont("assets/fonts/8bitoperator_jvec.ttf", 32f);
 
+    private static final int VISIBLE_ROWS = 4;
+    private static final int ROW_HEIGHT = 38;
+    private static final int MENU_FIRST_BASELINE = 281;
+
     private final List<ShopItem> items = new ArrayList<>(List.of(
             new ShopItem("tem flake", 3, "Heals 2HP\nfood of tem"),
             new ShopItem("tem flake (SALE)", 1, "Heals 2HP\nDISCOUNT FOOD OF TEM!!!"),
+            new ShopItem("tem cupcake", 8, "Heals 5HP\nsoft n sweet"),
+            new ShopItem("tem juice", 12, "Heals 9HP\nsqueezd by tem"),
             new ShopItem("tem flake (EXP)", 20, "Heals 2HP\nfood of tem (expensiv)"),
+            new ShopItem("tem donut", 30, "Heals 11HP\nhole-y snack"),
+            new ShopItem("tem egg", 50, "Heals 20HP\nhard-boild tem egg"),
+            new ShopItem("tem scarf", 150, "ARMOR 5DF\nwarm floofy scarf"),
+            new ShopItem("tem hat", 300, "ARMOR 10DF\nvery fashion"),
             new ShopItem("tem pay 4 colleg", 1000, "COLLEGE\ntem pursu higher education")
     ));
     private final Map<String, Integer> inventory = new LinkedHashMap<>();
@@ -49,6 +59,8 @@ final class TemShopPanel extends JPanel {
 
     private Screen screen = Screen.HOME;
     private int selection;
+    private int buyScroll;
+    private int sellScroll;
     private int balance = 145;
     private int talkCount;
     private boolean graduated;
@@ -172,52 +184,97 @@ final class TemShopPanel extends JPanel {
 
         g.setFont(ITEM_FONT);
         if (screen == Screen.BUY) {
-            for (int i = 0; i < items.size(); i++) {
-                ShopItem item = items.get(i);
-                int baseline = 281 + i * 32;
+            int total = items.size() + 1;
+            buyScroll = clampScroll(buyScroll, total);
+            for (int row = 0; row < VISIBLE_ROWS; row++) {
+                int i = buyScroll + row;
+                if (i >= total) {
+                    break;
+                }
+                int baseline = MENU_FIRST_BASELINE + row * ROW_HEIGHT;
                 if (selection == i) {
                     drawHeart(g, 449, baseline - 13);
                 }
                 g.setColor(WHITE);
-                g.drawString(item.name(), 477, baseline);
-                g.setColor(new Color(209, 202, 183));
-                g.drawString(item.priceLabel(), 477, baseline + 14);
-                g.setColor(WHITE);
+                if (i < items.size()) {
+                    ShopItem item = items.get(i);
+                    g.drawString(item.name(), 477, baseline);
+                    g.setColor(new Color(209, 202, 183));
+                    g.drawString(item.priceLabel(), 477, baseline + 15);
+                    g.setColor(WHITE);
+                } else {
+                    g.drawString("Exit", 477, baseline);
+                }
             }
-            int exitBaseline = 281 + items.size() * 32;
-            if (selection == items.size()) {
-                drawHeart(g, 449, exitBaseline - 13);
-            }
-            g.drawString("Exit", 477, exitBaseline);
+            drawScrollArrows(g, buyScroll, total);
             return;
         }
 
         List<ShopItem> goods = sellableItems();
-        for (int i = 0; i < goods.size(); i++) {
-            ShopItem item = goods.get(i);
-            int baseline = 281 + i * 32;
+        int total = goods.size() + 1;
+        sellScroll = clampScroll(sellScroll, total);
+        for (int row = 0; row < VISIBLE_ROWS; row++) {
+            int i = sellScroll + row;
+            if (i >= total) {
+                break;
+            }
+            int baseline = MENU_FIRST_BASELINE + row * ROW_HEIGHT;
             if (selection == i) {
                 drawHeart(g, 449, baseline - 13);
             }
             g.setColor(WHITE);
-            g.drawString(item.name(), 477, baseline);
-            g.setColor(new Color(209, 202, 183));
-            g.drawString("x" + inventory.getOrDefault(item.name(), 0) + " " + sellPrice(item) + "G", 477, baseline + 14);
-            g.setColor(WHITE);
+            if (i < goods.size()) {
+                ShopItem item = goods.get(i);
+                g.drawString(item.name(), 477, baseline);
+                g.setColor(new Color(209, 202, 183));
+                g.drawString("x" + inventory.getOrDefault(item.name(), 0) + " " + sellPrice(item) + "G", 477, baseline + 15);
+                g.setColor(WHITE);
+            } else {
+                g.drawString("Exit", 477, baseline);
+            }
         }
-        int exitBaseline = 281 + goods.size() * 32;
-        if (selection == goods.size()) {
-            drawHeart(g, 449, exitBaseline - 13);
+        drawScrollArrows(g, sellScroll, total);
+    }
+
+    private int clampScroll(int scroll, int total) {
+        int maxScroll = Math.max(0, total - VISIBLE_ROWS);
+        return Math.min(Math.max(scroll, 0), maxScroll);
+    }
+
+    private void drawScrollArrows(Graphics2D g, int scroll, int total) {
+        g.setColor(new Color(209, 202, 183));
+        if (scroll > 0) {
+            g.fillPolygon(new int[]{614, 622, 606}, new int[]{256, 266, 266}, 3);
         }
-        g.setColor(WHITE);
-        g.drawString("Exit", 477, exitBaseline);
+        if (scroll + VISIBLE_ROWS < total) {
+            g.fillPolygon(new int[]{614, 622, 606}, new int[]{434, 424, 424}, 3);
+        }
+    }
+
+    private void ensureVisible() {
+        if (screen == Screen.BUY) {
+            buyScroll = clampScroll(buyScroll, items.size() + 1);
+            if (selection < buyScroll) {
+                buyScroll = selection;
+            } else if (selection >= buyScroll + VISIBLE_ROWS) {
+                buyScroll = selection - VISIBLE_ROWS + 1;
+            }
+        } else if (screen == Screen.SELL) {
+            int total = sellableItems().size() + 1;
+            sellScroll = clampScroll(sellScroll, total);
+            if (selection < sellScroll) {
+                sellScroll = selection;
+            } else if (selection >= sellScroll + VISIBLE_ROWS) {
+                sellScroll = selection - VISIBLE_ROWS + 1;
+            }
+        }
     }
 
     private void drawStatus(Graphics2D g) {
         g.setFont(STATUS_FONT);
         g.setColor(WHITE);
-        g.drawString(balance + "G", 458, 445);
-        g.drawString(inventoryCount() + "/8", 559, 445);
+        g.drawString(balance + "G", 458, 460);
+        g.drawString(inventoryCount() + "/8", 559, 460);
     }
 
     private void installKeys() {
@@ -250,6 +307,7 @@ final class TemShopPanel extends JPanel {
         }
         selection = (selection + change + size) % size;
         sfx.playMove();
+        ensureVisible();
         if (screen == Screen.BUY) {
             if (selection < items.size()) {
                 setItemMessage(items.get(selection), false);
@@ -286,12 +344,14 @@ final class TemShopPanel extends JPanel {
                 case 0 -> {
                     screen = Screen.BUY;
                     selection = 0;
+                    buyScroll = 0;
                     setItemMessage(items.get(0), false);
                     temmie.setEmotion(Temmie.Emotion.SIDE_EYE);
                 }
                 case 1 -> {
                     screen = Screen.SELL;
                     selection = 0;
+                    sellScroll = 0;
                     if (sellableItems().isEmpty()) {
                         setMessage("* no more item...");
                         temmie.setEmotion(Temmie.Emotion.SAD, 30);
@@ -351,7 +411,12 @@ final class TemShopPanel extends JPanel {
     private void graduate() {
         graduated = true;
         temmie.setGraduated(true);
-        items.set(3, new ShopItem("temy ARMOR", 1000, "ARMOR 20DF\nmakes battles too easy"));
+        for (int i = 0; i < items.size(); i++) {
+            if (items.get(i).name().equals("tem pay 4 colleg")) {
+                items.set(i, new ShopItem("temy ARMOR", 1000, "ARMOR 20DF\nmakes battles too easy"));
+                break;
+            }
+        }
         temmie.setEmotion(Temmie.Emotion.JOY, 50);
         setMessage("* WOA!!\n* tem go to colleg...\n* tem bak! learn MANY THINs!");
     }
@@ -375,8 +440,10 @@ final class TemShopPanel extends JPanel {
         if (goods.isEmpty()) {
             screen = Screen.HOME;
             selection = 1;
+            sellScroll = 0;
         } else {
             selection = Math.min(selection, goods.size());
+            ensureVisible();
         }
         setMessage("* tem bought " + item.name() + "!\n* u got " + price + "G!");
     }
@@ -502,10 +569,14 @@ final class TemShopPanel extends JPanel {
             }
             clicked = (y - 265) / 40;
         } else {
-            if (y < 260 || y > 440) {
+            if (y < 260 || y > 260 + VISIBLE_ROWS * ROW_HEIGHT) {
                 return;
             }
-            clicked = (y - 265) / 32;
+            int visibleRow = (y - 265) / ROW_HEIGHT;
+            if (visibleRow < 0 || visibleRow >= VISIBLE_ROWS) {
+                return;
+            }
+            clicked = (screen == Screen.BUY ? buyScroll : sellScroll) + visibleRow;
         }
         if (clicked < 0 || clicked >= currentMenuSize()) {
             return;
